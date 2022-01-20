@@ -1,0 +1,96 @@
+version: '2.2'
+
+x-es_instance: &_es_instance
+    image: docker.elastic.co/elasticsearch/elasticsearch:$ES_VERSION
+    mem_limit: $ES_MAX_MEM
+    ulimits:
+        nofile:
+            soft: 65535
+            hard: 65535
+        memlock:
+            soft: -1
+            hard: -1
+#    networks:
+#        - arkime-elastic
+
+
+services:
+    es01:
+        <<: *_es_instance
+        container_name: $ES_NODE1
+        environment:
+            - node.name=$ES_NODE1
+            - discovery.seed_hosts=$ES_NODE2,$ES_NODE3
+            # default
+            - cluster.name=es-cluster
+            - cluster.initial_master_nodes=$ES_NODE1,$ES_NODE2,$ES_NODE3
+            - bootstrap.memory_lock=true
+            - network.host=0.0.0.0
+        volumes:
+            - $ES_DATA_DIR/$ES_NODE1:/usr/share/elasticsearch/data
+            - $ES_DATA_DIR/$ES_NODE1/logs:/usr/share/elasticsearch/logs
+#            - $ES_DATA_DIR/$ES_NODE1/elasticsearch/:/usr/share/elasticsearch/config
+        ports:
+            - 9200:9200    
+    es02:
+        <<: *_es_instance
+        container_name: $ES_NODE2
+        environment:
+            - node.name=$ES_NODE2
+            - discovery.seed_hosts=$ES_NODE1,$ES_NODE3
+            # default
+            - cluster.name=es-cluster
+            - cluster.initial_master_nodes=$ES_NODE1,$ES_NODE2,$ES_NODE3
+            - bootstrap.memory_lock=true
+            - network.host=0.0.0.0
+        volumes:
+            - $ES_DATA_DIR/$ES_NODE2:/usr/share/elasticsearch/data
+            - $ES_DATA_DIR/$ES_NODE2/logs:/usr/share/elasticsearch/logs
+#            - $ES_DATA_DIR/$ES_NODE1/elasticsearch/:/usr/share/elasticsearch/config
+            
+    es03:
+        <<: *_es_instance
+        container_name: $ES_NODE3
+        environment:
+            - node.name=$ES_NODE3
+            - discovery.seed_hosts=$ES_NODE1,$ES_NODE2
+            # default
+            - cluster.name=es-cluster
+            - cluster.initial_master_nodes=$ES_NODE1,$ES_NODE2,$ES_NODE3
+            - bootstrap.memory_lock=true
+            - network.host=0.0.0.0
+        volumes:
+            - $ES_DATA_DIR/$ES_NODE3:/usr/share/elasticsearch/data
+            - $ES_DATA_DIR/$ES_NODE3/logs:/usr/share/elasticsearch/logs
+#            - $ES_DATA_DIR/$ES_NODE1/elasticsearch/:/usr/share/elasticsearch/config
+            
+    kibana:
+        image: docker.elastic.co/kibana/kibana:$ES_VERSION
+        container_name: kibana
+        depends_on:
+            - $ES_NODE1
+            - $ES_NODE2
+            - $ES_NODE3
+        ports:
+            - 5601:5601
+        environment:
+            ELASTICSEARCH_URL: http://es01:9200
+            ELASTICSEARCH_HOSTS: http://es01:9200
+#        networks:
+#            - arkime-elastic
+    filebeat:
+        image: docker.elastic.co/beats/filebeat:$ES_VERSION
+        container_name: filebeat
+        depends_on:
+            - kibana
+        volumes:
+            - "./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml"
+            - ../Zeek/logs:/pcap
+        command: -e
+
+#volumes:
+#    arkime_config:
+#    arkime_logs:
+
+#networks:
+#    arkime-elastic:
