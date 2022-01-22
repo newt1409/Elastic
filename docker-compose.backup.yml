@@ -3,7 +3,6 @@ version: '2.2'
 x-es_instance: &_es_instance
     image: docker.elastic.co/elasticsearch/elasticsearch:$ES_VERSION
     mem_limit: $ES_MAX_MEM
-    restart: always
     ulimits:
         nofile:
             soft: 65535
@@ -14,25 +13,6 @@ x-es_instance: &_es_instance
 #    networks:
 #        - arkime-elastic
 
-x-logstash-variables: &logstash-variables
-    LOGSTASH_OUI_LOOKUP       : 'true'
-    LOGSTASH_SEVERITY_SCORING : 'true'
-    LOGSTASH_REVERSE_DNS      : 'false'
-    OS_EXTERNAL_HOSTS : '192.168.56.101:9200'
-    # OS_EXTERNAL_SSL : 'true'
-    # OS_EXTERNAL_SSL_CERTIFICATE_VERIFICATION : 'false'
-    # For security, OS_EXTERNAL_USER and OS_EXTERNAL_PASSWORD should be stored in Logstash keystore using ./scripts/auth_setup
-    #   See also volume mount for logstash.keystore below.
-    # OS_EXTERNAL_USER : 'janedoe'
-    # OS_EXTERNAL_PASSWORD : 'secret'
-x-common-lookup-variables: &common-lookup-variables
-        FREQ_LOOKUP : 'false'
-        FREQ_SEVERITY_THRESHOLD : '2.0'
-        TOTAL_MEGABYTES_SEVERITY_THRESHOLD : 1000
-        CONNECTION_SECONDS_SEVERITY_THRESHOLD : 3600
-        QUESTIONABLE_COUNTRY_CODES : 'CN,IR,KP,RU,UA'
-#x-common-beats-variables: &common-beats-variables
-#        BEATS_SSL : 'false'
 
 services:
     es01:
@@ -83,40 +63,10 @@ services:
             - $ES_DATA_DIR/$ES_NODE3:/usr/share/elasticsearch/data
             - $ES_DATA_DIR/$ES_NODE3/logs:/usr/share/elasticsearch/logs
 #            - $ES_DATA_DIR/$ES_NODE1/elasticsearch/:/usr/share/elasticsearch/config
-    
-    logstash:
-        image: docker.elastic.co/logstash/logstash:$ES_VERSION
-        container_name: logstash
-        restart: always
-        environment:
-            #<< : *process-variables
-            << : *logstash-variables
-            #<< : *common-beats-variables
-            << : *common-lookup-variables
-            LS_JAVA_OPTS :  "-Xmx256m -Xms256m"
-            #OS_HOSTS: http://es01:9200
             
-        depends_on:
-            - $ES_NODE1
-            - $ES_NODE2
-            - $ES_NODE3
-        ports:
-            - 5044:5044
-            - 9001:9001
-            - 9600:9600
-        volumes:
-            - ./logstash/config/logstash.yml:/usr/share/logstash/config/logstash.yml:ro
-            - ./logstash/pipelines:/usr/share/logstash/pipeline:ro
-            #- ./logstash/maps/malcolm_severity.yaml:/etc/malcolm_severity.yaml:ro
-            #- ./cidr-map.txt:/usr/share/logstash/config/cidr-map.txt:ro
-            #- ./host-map.txt:/usr/share/logstash/config/host-map.txt:ro
-            #- ./net-map.json:/usr/share/logstash/config/net-map.json:ro
-
-
     kibana:
         image: docker.elastic.co/kibana/kibana:$ES_VERSION
         container_name: kibana
-        restart: always
         depends_on:
             - $ES_NODE1
             - $ES_NODE2
@@ -130,7 +80,6 @@ services:
 #            - arkime-elastic
     filebeat:
         image: docker.elastic.co/beats/filebeat:$ES_VERSION
-        restart: always
         container_name: filebeat
         depends_on:
             - kibana
