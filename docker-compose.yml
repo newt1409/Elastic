@@ -136,7 +136,7 @@ services:
             - kibana
         volumes:
             - "./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml"
-            - ../Zeek/logs:/pcap
+            - "/opt/zeek/logs/current:/pcap"
         command: -e
 
 #volumes:
