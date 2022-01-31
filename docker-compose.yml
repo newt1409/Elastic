@@ -137,6 +137,7 @@ services:
         volumes:
             - "./filebeat/filebeat.yml:/usr/share/filebeat/filebeat.yml"
             - "/opt/zeek/logs/current:/pcap"
+            - "../Arkime/suricata/logs:/suricata"
         command: -e
 
 #volumes:

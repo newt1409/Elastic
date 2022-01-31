@@ -117,5 +117,15 @@ filebeat.modules:
         enabled: true
         var.paths: ["/pcap/x509.log"]    
         
+#---------------------------- Suricata Module ----------------------------
+  - module: suricata
+    eve:
+        enabled: true
+        var.paths: ["/suricata/eve.json"]
+
+
+
+
+
 output.logstash:
   hosts: ["192.168.56.101:5044"]
